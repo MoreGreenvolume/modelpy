@@ -1,5 +1,6 @@
 #
-# The model with parameters adapted to the city of zurich 
+# Example of how to run the Python code, and access the output
+# This case is identical to the default setup of CLASS (the version with interface) 
 #
 
 from pylab import *
@@ -9,6 +10,10 @@ from model import *
 Create empty model_input and set up case
 """
 run1input = model_input()
+
+
+
+# BAS: Here the default parameters are set. 
 
 run1input.dt         = 60.       # time step [s]
 run1input.runtime    = 12*3600    # total run time [s]
@@ -52,21 +57,21 @@ run1input.dv         = 4.0       # initial u-wind jump at h [m s-1]
 run1input.gammav     = 0.        # free atmosphere v-wind speed lapse rate [s-1]
 run1input.advv       = 0.        # advection of v-wind [m s-2]
 
-run1input.sw_sl      = True      # surface layer switch
+run1input.sw_sl      = True     # surface layer switch
 run1input.ustar      = 0.3       # surface friction velocity [m s-1]
 run1input.z0m        = 0.02      # roughness length for momentum [m]
 run1input.z0h        = 0.002     # roughness length for scalars [m]
 
-run1input.sw_rad     = False     # radiation switch
-run1input.lat        = 47.36667  # latitude [deg]
-run1input.lon        = 8.55      # longitude [deg]
+run1input.sw_rad     = True      # radiation switch
+run1input.lat        = 51.97     # latitude [deg]
+run1input.lon        = -4.93     # longitude [deg]
 run1input.doy        = 268.      # day of the year [-]
 run1input.tstart     = 6.8       # time of the day [h UTC]
 run1input.cc         = 0.0       # cloud cover fraction [-]
-run1input.Q          = 0.        # net radiation [W m-2] 
+run1input.Q          = 0.      # net radiation [W m-2] 
 run1input.dFz        = 0.        # cloud top radiative divergence [W m-2] 
 
-run1input.sw_ls      = False     # land surface switch
+run1input.sw_ls      = True     # land surface switch
 run1input.ls_type    = 'js'      # land-surface parameterization ('js' for Jarvis-Stewart or 'ags' for A-Gs)
 run1input.wg         = 0.21      # volumetric water content top soil layer [m3 m-3]
 run1input.w2         = 0.21      # volumetric water content deeper soil layer [m3 m-3]
@@ -107,26 +112,30 @@ run1input.dz_h       = 150.      # Transition layer thickness [m]
 Init and run the model
 """
 
-# Do a first modelrun
-r1 = model(run1input)
-r1.run()
 
-"""
-Plot output
-"""
-figure()
-subplot(131)
-plot(r1.out.t, r1.out.h)
-xlabel('time [h]')
-ylabel('h [m]')
+import itertools as it
+import xarray as xr
 
-subplot(132)
-plot(r1.out.t, r1.out.theta)
-xlabel('time [h]')
-ylabel('theta [K]')
+npoints = 4
+# Input parameters
+input_parameters_variable = {
+    'ALBEDO' : np.linspace(0,1,npoints),
+    'LAI' : np.linspace(0,10,npoints),
+    'FRAC' : np.linspace(0,1,npoints)
+}
 
-subplot(133)
-plot(r1.out.t, r1.out.q*1000.)
-xlabel('time [h]')
-ylabel('q [g kg-1]')
-plt.show()
+results_array = np.zeros((npoints,npoints,npoints))
+for i,albedo in enumerate(input_parameters_variable['ALBEDO']):
+    for j,frac in enumerate(input_parameters_variable['FRAC']):
+        for k,lai in enumerate(input_parameters_variable['LAI']):
+            print(" Running model, with ALBEDO={0} ; LAI={1}; FRAC={2}".format(albedo,lai,frac))
+            run1input.alpha = albedo
+            run1input.lai = lai
+            run1input.frac = frac
+            r1 = model(run1input)
+            r1.run()
+            results_array[i,j,k] = np.max(r1.out.T2m)
+
+model_results = xr.DataArray(results_array,[(key, input_parameters_variable[key]) for key in input_parameters_variable])
+
+model_results
