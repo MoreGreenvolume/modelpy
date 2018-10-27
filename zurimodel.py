@@ -20,8 +20,8 @@ run1input.runtime    = 12*3600    # total run time [s]
 
 # mixed-layer input
 run1input.sw_ml      = True      # mixed-layer model switch
-run1input.sw_shearwe = False     # shear growth mixed-layer switch
-run1input.sw_fixft   = False     # Fix the free-troposphere switch
+run1input.sw_shearwe = False     # FALSE shear growth mixed-layer switch
+run1input.sw_fixft   = False     # FALSE Fix the free-troposphere switch
 run1input.h          = 200.      # initial ABL height [m]
 run1input.Ps         = 101300.   # surface pressure [Pa]
 run1input.divU       = 0.        # horizontal large-scale divergence of wind [s-1]
@@ -46,7 +46,7 @@ run1input.gammaCO2   = 0.        # free atmosphere CO2 lapse rate [ppm m-1]
 run1input.advCO2     = 0.        # advection of CO2 [ppm s-1]
 run1input.wCO2       = 0.        # surface kinematic CO2 flux [ppm m s-1]
 
-run1input.sw_wind    = False     # prognostic wind switch
+run1input.sw_wind    = True     # prognostic wind switch
 run1input.u          = 6.        # initial mixed-layer u-wind speed [m s-1]
 run1input.du         = 4.        # initial u-wind jump at h [m s-1]
 run1input.gammau     = 0.        # free atmosphere u-wind speed lapse rate [s-1]
@@ -65,14 +65,14 @@ run1input.z0h        = 0.002     # roughness length for scalars [m]
 run1input.sw_rad     = True      # radiation switch
 run1input.lat        = 51.97     # latitude [deg]
 run1input.lon        = -4.93     # longitude [deg]
-run1input.doy        = 268.      # day of the year [-]
+run1input.doy        = 180.      # day of the year [-]
 run1input.tstart     = 6.8       # time of the day [h UTC]
 run1input.cc         = 0.0       # cloud cover fraction [-]
-run1input.Q          = 0.      # net radiation [W m-2] 
+run1input.Q          = 0.        # net radiation [W m-2] 
 run1input.dFz        = 0.        # cloud top radiative divergence [W m-2] 
 
 run1input.sw_ls      = True     # land surface switch
-run1input.ls_type    = 'js'      # land-surface parameterization ('js' for Jarvis-Stewart or 'ags' for A-Gs)
+run1input.ls_type    = 'ags'      # land-surface parameterization ('js' for Jarvis-Stewart or 'ags' for A-Gs)
 run1input.wg         = 0.21      # volumetric water content top soil layer [m3 m-3]
 run1input.w2         = 0.21      # volumetric water content deeper soil layer [m3 m-3]
 run1input.cveg       = 0.85      # vegetation fraction [-]
@@ -103,7 +103,7 @@ run1input.Wl         = 0.0000    # equivalent water layer depth for wet vegetati
 
 run1input.Lambda     = 5.9       # thermal diffusivity skin layer [-]
 
-run1input.c3c4       = 'c3'      # Plant type ('c3' or 'c4')
+run1input.c3c4       = 'c4'      # Plant type ('c3' or 'c4')
 
 run1input.sw_cu      = False     # Cumulus parameterization switch
 run1input.dz_h       = 150.      # Transition layer thickness [m]
@@ -119,12 +119,13 @@ import xarray as xr
 npoints = 4
 # Input parameters
 input_parameters_variable = {
-    'ALBEDO' : np.linspace(0,1,npoints),
-    'LAI' : np.linspace(0,10,npoints),
-    'FRAC' : np.linspace(0,1,npoints)
+    'ALBEDO' : [0.25], #np.linspace(0,1,npoints),
+    'LAI' :  [1,9],  #np.linspace(0,10,npoints),
+    'FRAC' : [.1,.1] #np.linspace(0,1,npoints)
 }
+input_shape = (1,2,2)
 
-results_array = np.zeros((npoints,npoints,npoints))
+results_array = np.zeros((1,2,2))
 for i,albedo in enumerate(input_parameters_variable['ALBEDO']):
     for j,frac in enumerate(input_parameters_variable['FRAC']):
         for k,lai in enumerate(input_parameters_variable['LAI']):
@@ -134,7 +135,7 @@ for i,albedo in enumerate(input_parameters_variable['ALBEDO']):
             run1input.frac = frac
             r1 = model(run1input)
             r1.run()
-            results_array[i,j,k] = np.max(r1.out.T2m)
+            results_array[i,j,k] = np.max(r1.out.theta)
 
 model_results = xr.DataArray(results_array,[(key, input_parameters_variable[key]) for key in input_parameters_variable])
 
